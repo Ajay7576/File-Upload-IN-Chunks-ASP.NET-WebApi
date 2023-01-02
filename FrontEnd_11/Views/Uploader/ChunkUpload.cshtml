@@ -1,0 +1,100 @@
+﻿
+@using Syncfusion.EJ2
+@{
+    var asyncSettings = new Syncfusion.EJ2.Inputs.UploaderAsyncSettings { SaveUrl = "https://ej2.syncfusion.com/services/api/uploadbox/Save", RemoveUrl = "https://ej2.syncfusion.com/services/api/uploadbox/Remove", ChunkSize = 500000 };
+    var data = new chunkValues().UploaderModel();
+}
+
+@section ControlsSection{
+    <div class="col-lg-8 control-section">
+        <div class="control_wrapper">
+            <ejs-uploader id="UploadFiles" removing="onFileRemove" dropArea=".control-fluid" asyncSettings="@asyncSettings" maxFileSize="104857600" autoUpload="false"  chunkFailure ="onBeforeFailure" pausing="onPausing" resuming="onResuming">
+            </ejs-uploader>
+        </div>
+    </div>
+
+    <div class="col-lg-4 property-section">
+        <table id="property" title="Properties" style="width: 100%;">
+            <tr>
+                <td class="left-side">Chunk Size :</td>
+                <td style="padding-top: 10px">
+                    <ejs-dropdownlist id="chunk" dataSource="@data" placeholder="Select chunk size" text="500 KB" popupHeight="220px" change="onChange">
+                        <e-dropdownlist-fields text="text" value="chunkValue"></e-dropdownlist-fields>
+                    </ejs-dropdownlist>
+                </td>
+            </tr>
+        </table>
+    </div>
+}
+
+<style>
+    .control_wrapper {
+        max-width: 400px;
+        margin: auto;
+    }
+
+    .e-upload {
+        width: 100%;
+        position: relative;
+        margin-top: 15px;
+    }
+
+    .control_wrapper .e-upload .e-upload-drag-hover {
+        margin: 0;
+    }
+</style>
+
+@section PreScripts {
+    <script>
+        var dropElement = document.getElementsByClassName('control-fluid')[0];
+        function onChange(args) {
+            var uploadObj = document.getElementById("UploadFiles")
+            uploadObj.ej2_instances[0].asyncSettings.chunkSize = parseInt(args.itemData.chunkValue);
+        }
+        var isInteraction = false;
+         // to update flag variable value for automatic pause and resume
+        function onPausing(args) {
+            if (args.event !== null && !navigator.onLine) {
+                isInteraction = true;
+            }
+            else {
+                isInteraction = false;
+            }
+        }
+        // to update flag variable value for automatic pause and resume
+        function onResuming(args) {
+            if (args.event !== null && !navigator.onLine) {
+                isInteraction = true;
+            }
+            else {
+                isInteraction = false;
+            }
+        }
+        function onFileRemove(args) {
+            args.postRawFile = false;
+        }
+        // to prevent triggering chunk-upload failure event and to pause uploading on network failure
+        function onBeforeFailure(args) {
+            args.cancel = !isInteraction;
+            var uploadObj = document.getElementById('UploadFiles').ej2_instances[0];
+            // interval to check network availability on every 500 milliseconds
+            var clearTimeInterval = setInterval(function () {
+                if (navigator.onLine && !ej.base.isNullOrUndefined(uploadObj.filesData[0]) && uploadObj.filesData[0].statusCode == 4) {
+                    uploadObj.resume(uploadObj.filesData);
+                    clearSetInterval();
+                }
+                else {
+                    if (!isInteraction && !ej.base.isNullOrUndefined(uploadObj.filesData[0]) && uploadObj.filesData[0].statusCode == 3) {
+                        uploadObj.pause(uploadObj.filesData);
+                    }
+                }
+            }, 500);
+            // clear Interval after when network is available.
+            function clearSetInterval() {
+                clearInterval(clearTimeInterval);
+            }
+        }
+ 
+    </script>
+}
+
